@@ -18,7 +18,6 @@ public class Serial {
     public static void writeObject(Socket sock, Object obj) throws IOException {
         ObjectOutputStream out = new ObjectOutputStream(sock.getOutputStream());
         out.writeObject(obj);
-        out.close();
     }
 
     public static Object readObject(Socket socket) throws IOException, ClassNotFoundException {

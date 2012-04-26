@@ -19,7 +19,6 @@ import java.io.Serializable;
 public class Packet implements Serializable {
 
     public String command;
-    public String user;
     public int nonce;
     public String data;
     public Packet pkt;
@@ -27,7 +26,6 @@ public class Packet implements Serializable {
     public Packet() {
         command = "";
         nonce = 0;
-        user = "";
         data = "";
         pkt = null;
     }
@@ -55,17 +53,6 @@ public class Packet implements Serializable {
     }
 
     /*
-     * Setter and Getter function for "user" name
-     */
-    public String getUser() {
-        return user;
-    }
-
-    public void setUserName(String value) {
-        user = value;
-    }
-
-    /*
      * Setter and Getter function for "data"
      */
     public String getData() {
@@ -79,11 +66,10 @@ public class Packet implements Serializable {
     /*
      * Function created so that we do not have to set data manually!
      */
-    public void craftPacket(String command, String user, int nonce, String data) {
+    public void craftPacket(String command, int nonce, String data) {
         this.command = command;
         this.data = data;
         this.nonce = nonce;
-        this.user = user;
     }
     
     /*
@@ -92,7 +78,7 @@ public class Packet implements Serializable {
      */
 
     public void craftPacket(String command, String user, int nonce, String data, Packet packet) {
-        craftPacket(command, user, nonce, data);
+        craftPacket(command, nonce, data);
         this.pkt = packet;
     }
 }

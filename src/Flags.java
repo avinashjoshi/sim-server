@@ -26,7 +26,6 @@ public class Flags {
     public static boolean endServer; // The main thread TCPListener quits if this is true
     public static int tcpPort; // The TCP Port being used by server (from property file)
     public static ArrayList<Integer> clientPorts;
-    public static ArrayList<String> availableUsers;
     public static ServerSocket serverSocket;
     public static HashMap<String, Socket> ipUserSession; // List of all logged-in users (IP based session)
     public static ArrayList<UserPass> usersList; // List of all users from passwd file
@@ -38,7 +37,6 @@ public class Flags {
         clientPorts = new ArrayList<Integer>();
         totalConnections = 0;
         tcpPort = ServerInit.TCPPort;
-        availableUsers = new ArrayList<String>();
         endServer = true;
         allSocketList = new HashMap<Integer, Socket>();
         clientNumber = 0;

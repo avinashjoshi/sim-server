@@ -30,7 +30,7 @@ public class TCPListener extends Thread {
              * can be closed from main()
              */
             Flags.serverSocket = new ServerSocket(TCPPort);
-            log.info("Connected to " + Flags.serverSocket);
+            log.info("Connected to " + Flags.serverSocket.getInetAddress().getHostAddress() + ":" + Flags.serverSocket.getLocalPort());
             while (Flags.endServer == false) {
                 // Listening for incoming connections
                 listenSock = Flags.serverSocket.accept();
@@ -49,7 +49,6 @@ public class TCPListener extends Thread {
                 } finally {
                     Flags.clientNumberWriteLock.unlock();
                 }
-
             }
         } catch (Exception e) {
         }
