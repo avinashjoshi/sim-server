@@ -1,3 +1,6 @@
+
+import java.util.ArrayList;
+
 /*
  * This class will have all functions that might be necessary
  * in the server application
@@ -9,6 +12,17 @@
  * @since April 23, 2012
  */
 public class Functions {
+    
+    public static ArrayList<String> LoadCommands (String cmdString, String sep) {
+        ArrayList<String> commands = new ArrayList<String>();
+        String cmdList[] = cmdString.split(sep);
+        int i = 0;
+        while (i < cmdList.length) {
+             commands.add(cmdList[i]);
+             i++;
+        }
+        return commands;
+    }
 
     /**
      *
@@ -20,7 +34,7 @@ public class Functions {
      */
     public static int CheckUser(String username) {
         int userValue = 0;
-        int flag = 0;
+        int flag = -1;
         while (userValue < Flags.usersList.size()) {
             if (Flags.usersList.get(userValue).userName.equals(username)) {
                 flag = userValue;

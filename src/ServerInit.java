@@ -2,8 +2,8 @@
 import java.util.ResourceBundle;
 
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * This file imports all "variables" that are staically declared
+ * in server-conf.properties - Uses Apache log4j
  */
 
 /**
@@ -13,10 +13,12 @@ import java.util.ResourceBundle;
 public class ServerInit {
     public static int TCPPort;
     public static String passwdFile;
+    public static String workingDirectory;
     
     static {
         ResourceBundle sConfigBundle = ResourceBundle.getBundle("server-conf");
         TCPPort = Integer.parseInt((String) sConfigBundle.getObject("TCPPort"));
-        passwdFile = (String) sConfigBundle.getObject("PasswdFile");
+        workingDirectory = (String) sConfigBundle.getObject("WorkingDirectory");
+        passwdFile = ServerInit.workingDirectory.concat((String) sConfigBundle.getObject("PasswdFile"));
     }
 }

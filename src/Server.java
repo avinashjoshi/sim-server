@@ -92,6 +92,7 @@ public class Server {
                     }
                     i++;
                 }
+                Flags.ipUserSession.clear();
                 Flags.endServer = true;
                 if (Flags.serverSocket != null) {
                     Flags.serverSocket.close();

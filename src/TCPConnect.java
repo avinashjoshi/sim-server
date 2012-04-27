@@ -3,6 +3,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import org.apache.log4j.Logger;
 
 /*
@@ -27,15 +28,19 @@ public class TCPConnect extends Thread {
     public static Logger log = Logger.getLogger(TCPConnect.class);
     private Packet sendPacket;
     private String command;
-    private String username;
+    private String usernameReceived;
+    private String password;
     private int nonce;
     private String data;
     private int i;
     private int clientNumber;
+    private String[] dataSplit;
+    private String sessionUser;
 
     public TCPConnect(Socket skt, int clientNumber) throws IOException {
         sock = skt;
         this.clientNumber = clientNumber;
+        sessionUser = null;
     }
 
     @Override
@@ -59,12 +64,12 @@ public class TCPConnect extends Thread {
                 command = packet.getCommand();  // Get the command
                 nonce = packet.getNonce();      // Get the Nonce
                 data = packet.getData();        // Get the data
-                i = Functions.CheckUser(username);    // Check if username exixts
+                i = 0;
 
                 //Check if the packet really has something or not!
                 if (command.equals("")
-                        || username.equals("")
-                        || data.equals("")) {
+                        || data.equals("")
+                        || nonce == 0) {
                     /*
                      * Warn the client that an invalid packet was sent!
                      */
@@ -74,22 +79,28 @@ public class TCPConnect extends Thread {
                     continue;
                 } else if (command.equals("register")) {
                     /*
-                     * User trying to register from a client
+                     * User trying to register from a client the data will be
+                     * username:password
                      */
 
-                    if (i > 0) {
+                    dataSplit = data.split(":");
+                    usernameReceived = dataSplit[0];
+                    password = Crypto.sha1(dataSplit[1]);
+                    i = Functions.CheckUser(usernameReceived);
+
+                    if (i > -1) {
                         /*
                          * Yep, already in file
                          */
                         log.warn("Username already exists!");
-                        sendPacket.craftPacket("error.print", packet.getNonce(), "User " + username + " already Exists!");
+                        sendPacket.craftPacket("error.print", packet.getNonce(), "User " + usernameReceived + " already Exists!");
                         Serial.writeObject(sock, sendPacket);
                     } else {
                         /*
                          * That user does not exist, creating a new one
                          */
                         UserPass userpass = new UserPass();
-                        userpass.createUser(username, Crypto.sha1(data));
+                        userpass.createUser(usernameReceived, password);
                         // add userpass object to the ArrayList
                         Flags.usersList.add(userpass);
 
@@ -103,13 +114,20 @@ public class TCPConnect extends Thread {
 
                         sendPacket.craftPacket("success.print", packet.getNonce() + 1, "Registered user ");
                         Serial.writeObject(sock, sendPacket);
-                        log.info("Registering user ");
+                        log.info("Registering user " + usernameReceived);
                     }
                 } else if (command.equals("login")) {
                     /*
-                     * User trying to log into server...
+                     * User trying to log into server... Data field is
+                     * username:password
                      */
-                    if (i == 0) {
+
+                    dataSplit = data.split(":");
+                    usernameReceived = dataSplit[0];
+                    password = Crypto.sha1(dataSplit[1]);
+                    i = Functions.CheckUser(usernameReceived);
+
+                    if (i == -1) {
                         /*
                          * Oops, un-registered user trying to log-in
                          */
@@ -120,53 +138,67 @@ public class TCPConnect extends Thread {
                         /*
                          * Username exists!
                          */
-                        if (Flags.usersList.get(i).passwd.equals(Crypto.sha1(data))) {
+                        if (Flags.usersList.get(i).passwd.equals(password)) {
                             /*
                              * User authenticated. Check if user already in
                              * session (ipUserSession)
                              */
-                            if (Functions.isLoggedIn(username)) {
+                            if (Functions.isLoggedIn(usernameReceived)) {
                                 /*
                                  * User already has an existing session!
                                  */
                                 sendPacket.craftPacket("error.print", nonce, "You are already logged in from "
-                                        + Functions.getUserIPAddress(username) + "!");
+                                        + Functions.getUserIPAddress(usernameReceived) + "!");
                                 log.info("User trying to log in again from different IP -"
-                                        + username + ":" + sock.getInetAddress().getHostAddress());
+                                        + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
                                 Serial.writeObject(sock, sendPacket);
                             } else {
                                 /*
                                  * Finally, Totally authenticated the user &
                                  * Adding username into session
                                  */
-                                Flags.ipUserSession.put(username, sock);
+                                Flags.ipUserSession.put(usernameReceived, sock);
+                                this.sessionUser = this.usernameReceived;
                                 sendPacket.craftPacket("success.log", nonce, "Logged In!");
-                                log.info("User logged in -" + username + ":" + sock.getInetAddress().getHostAddress());
+                                log.info("User logged in -" + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
                                 Serial.writeObject(sock, sendPacket);
                             }
                         } else {
                             /*
                              * Incorrect password
                              */
-                            log.warn("Password incorrect for user " + username + "!");
+                            log.warn("Password incorrect for user " + usernameReceived + "!");
                             sendPacket.craftPacket("error.print", nonce, "Invalid username or password!");
                             Serial.writeObject(sock, sendPacket);
                         }
                     }
-                } else if (command.equals("logout")) {
-                    // Removing username from the session
-                    Flags.ipUserSession.remove(username);
                 } else if (command.equals("quit")) {
                     /*
                      * The client requested to close connection with server :(
                      */
-                    Flags.ipUserSession.remove(username);
-                    log.info("User " + username + " quitting...");
+                    Flags.ipUserSession.remove(usernameReceived);
+                    log.info("User " + usernameReceived + " quitting...");
                     break;
+                } else if (Flags.loggedInCommands.contains(command)) {
+                    if (sessionUser == null || !Functions.isLoggedIn(sessionUser)) {
+                        /*
+                         * User not logged in to access this section
+                         */
+                        log.info("User " + sessionUser + " unauthorized to access \"" + command +"\"");
+                        sendPacket.craftPacket("error.print", nonce, "You need to be logged in!");
+                        Serial.writeObject(sock, sendPacket);
+                        continue;
+                    } else if (command.equals("logout")) {
+                        // Removing username from the session
+                        Flags.ipUserSession.remove(usernameReceived);
+                        sendPacket.craftPacket("error.print", nonce, "Logged out!");
+                        Serial.writeObject(sock, sendPacket);
+                    }
                 } else {
                     /*
                      * Error: command not one of the above "if" condition
                      */
+                    log.info("Invalid packet - " + command + "|" + data);
                     sendPacket.craftPacket("error.log", nonce, "Command " + command + ": not found!");
                     Serial.writeObject(sock, sendPacket);
                 }
@@ -175,7 +207,7 @@ public class TCPConnect extends Thread {
             try {
                 sock.close();
                 if (Flags.ipUserSession.containsValue(Flags.allSocketList.get(this.clientNumber))) {
-                    Flags.ipUserSession.remove(username);
+                    Flags.ipUserSession.remove(usernameReceived);
                 }
                 Flags.allSocketList.remove(this.clientNumber);
                 Flags.clientNumber--;

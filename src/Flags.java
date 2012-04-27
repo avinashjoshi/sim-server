@@ -25,16 +25,16 @@ public class Flags {
     public static HashMap<Integer, Socket> allSocketList; //A hashmap of all sockets connected via TCP
     public static boolean endServer; // The main thread TCPListener quits if this is true
     public static int tcpPort; // The TCP Port being used by server (from property file)
-    public static ArrayList<Integer> clientPorts;
     public static ServerSocket serverSocket;
     public static HashMap<String, Socket> ipUserSession; // List of all logged-in users (IP based session)
     public static ArrayList<UserPass> usersList; // List of all users from passwd file
     //public static boolean passFileInUse; // To ensure no two thread access passwd file same time
     public static final Lock passwdReadLock = readWriteLock.readLock();
     public static final Lock passwdWriteLock = readWriteLock.writeLock();
+    public static ArrayList<String> loggedInCommands;
+    private final String loggedInCommandString;
 
     public Flags() {
-        clientPorts = new ArrayList<Integer>();
         totalConnections = 0;
         tcpPort = ServerInit.TCPPort;
         endServer = true;
@@ -42,5 +42,7 @@ public class Flags {
         clientNumber = 0;
         usersList = new ArrayList<UserPass>();
         ipUserSession = new HashMap<String, Socket>();
+        loggedInCommandString = "logout,connect,chat";
+        loggedInCommands = Functions.LoadCommands(loggedInCommandString, ",");
     }
 }
