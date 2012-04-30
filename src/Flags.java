@@ -27,8 +27,8 @@ public class Flags {
     public static int tcpPort; // The TCP Port being used by server (from property file)
     public static ServerSocket serverSocket;
     public static HashMap<String, Socket> ipUserSession; // List of all logged-in users (IP based session)
+    public static ArrayList<String> loggedInUsers; //List of all logged in users
     public static ArrayList<UserPass> usersList; // List of all users from passwd file
-    //public static boolean passFileInUse; // To ensure no two thread access passwd file same time
     public static final Lock passwdReadLock = readWriteLock.readLock();
     public static final Lock passwdWriteLock = readWriteLock.writeLock();
     public static ArrayList<String> loggedInCommands;
@@ -42,7 +42,8 @@ public class Flags {
         clientNumber = 0;
         usersList = new ArrayList<UserPass>();
         ipUserSession = new HashMap<String, Socket>();
-        loggedInCommandString = "logout,connect,chat";
+        loggedInCommandString = "logout,list,talk";
         loggedInCommands = Functions.LoadCommands(loggedInCommandString, ",");
+        loggedInUsers = new ArrayList<String>();
     }
 }

@@ -2,24 +2,23 @@
 import java.util.ArrayList;
 
 /*
- * This class will have all functions that might be necessary
- * in the server application
+ * This class will have all functions that might be necessary in the server
+ * application
  */
-
 /**
  *
  * @author Avinash Joshi <avinash.joshi@utdallas.edu>
  * @since April 23, 2012
  */
 public class Functions {
-    
-    public static ArrayList<String> LoadCommands (String cmdString, String sep) {
+
+    public static ArrayList<String> LoadCommands(String cmdString, String sep) {
         ArrayList<String> commands = new ArrayList<String>();
         String cmdList[] = cmdString.split(sep);
         int i = 0;
         while (i < cmdList.length) {
-             commands.add(cmdList[i]);
-             i++;
+            commands.add(cmdList[i]);
+            i++;
         }
         return commands;
     }
@@ -44,26 +43,41 @@ public class Functions {
         }
         return flag;
     }
-    
+
     /**
-     * 
+     *
      * This function checks if a user is already logged into the server
-     * 
-     * @param user is got as a parameter to check if that user is already in ipUserSession list
+     *
+     * @param user is got as a parameter to check if that user is already in
+     * ipUserSession list
      * @return true if exist else returns false
      */
-    public static boolean isLoggedIn (String user) {
+    public static boolean isLoggedIn(String user) {
         if (Flags.ipUserSession.containsKey(user)) {
             return true;
-        } else return false;
+        } else {
+            return false;
+        }
     }
-    
+
     /**
-     * 
+     *
      * @param user's ip address (String) is returned
      * @return users IPaddress is returned
      */
-    public static String getUserIPAddress (String user) {
+    public static String getUserIPAddress(String user) {
         return Flags.ipUserSession.get(user).getInetAddress().getHostAddress();
+    }
+
+    public static String getOnlineUsers(String username) {
+        String onlineUsers = "";
+        int i = 0;
+        while (i < Flags.loggedInUsers.size()) {
+            if (!Flags.loggedInUsers.get(i).equals(username)) {
+                onlineUsers = onlineUsers + (onlineUsers.equals("") ? "" : ",") + Flags.loggedInUsers.get(i);
+            }
+            i++;
+        }
+        return onlineUsers;
     }
 }

@@ -82,6 +82,7 @@ public class Server {
                 System.out.println("Stopping server...");
                 // From 
                 totalCon = Flags.allSocketList.size();
+                Flags.loggedInUsers.clear();
                 while (i < totalCon) {
                     if (Flags.allSocketList.get(i) != null) {
                         if (Flags.allSocketList.get(i).isConnected()) {

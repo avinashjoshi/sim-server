@@ -3,7 +3,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import org.apache.log4j.Logger;
 
 /*
@@ -36,6 +35,7 @@ public class TCPConnect extends Thread {
     private int clientNumber;
     private String[] dataSplit;
     private String sessionUser;
+    private String userList;
 
     public TCPConnect(Socket skt, int clientNumber) throws IOException {
         sock = skt;
@@ -159,6 +159,7 @@ public class TCPConnect extends Thread {
                                  */
                                 Flags.ipUserSession.put(usernameReceived, sock);
                                 this.sessionUser = this.usernameReceived;
+                                Flags.loggedInUsers.add(usernameReceived);
                                 sendPacket.craftPacket("success.log", nonce, "Logged In!");
                                 log.info("User logged in -" + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
                                 Serial.writeObject(sock, sendPacket);
@@ -177,6 +178,7 @@ public class TCPConnect extends Thread {
                      * The client requested to close connection with server :(
                      */
                     Flags.ipUserSession.remove(usernameReceived);
+                    Flags.loggedInUsers.remove(usernameReceived);
                     log.info("User " + usernameReceived + " quitting...");
                     break;
                 } else if (Flags.loggedInCommands.contains(command)) {
@@ -184,13 +186,26 @@ public class TCPConnect extends Thread {
                         /*
                          * User not logged in to access this section
                          */
-                        log.info("User " + sessionUser + " unauthorized to access \"" + command +"\"");
+                        log.info("User " + sessionUser + " unauthorized to access \"" + command + "\"");
                         sendPacket.craftPacket("error.print", nonce, "You need to be logged in!");
                         Serial.writeObject(sock, sendPacket);
                         continue;
+                    } else if (command.equals("list")) {
+                        /*
+                         * User is querying to list all logged in users
+                         */
+                        log.info("Request to list by " + usernameReceived);
+                        userList = Functions.getOnlineUsers(usernameReceived);
+                        sendPacket.craftPacket("success.print", nonce, userList);
+                        Serial.writeObject(sock, sendPacket);
+                    } else if (command.equals("talk")) {
+                        /*
+                         * User wants to talk to a specific user
+                         */
                     } else if (command.equals("logout")) {
                         // Removing username from the session
                         Flags.ipUserSession.remove(usernameReceived);
+                        Flags.loggedInUsers.remove(usernameReceived);
                         sendPacket.craftPacket("error.print", nonce, "Logged out!");
                         Serial.writeObject(sock, sendPacket);
                     }
