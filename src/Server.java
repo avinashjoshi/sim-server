@@ -38,8 +38,14 @@ public class Server {
             System.out.print("server> ");
             task = in.readLine();
             if (task.equals("help")) {
+                /*
+                 * Print out help command
+                 */
                 System.out.println("Possible commands: help, start, stop, quit");
             } else if (task.equals("start")) {
+                /*
+                 * Server requested to be started
+                 */
                 if (Flags.endServer == false) {
                     System.out.println("Server already started!");
                     continue;
@@ -71,10 +77,16 @@ public class Server {
                 }
                 Flags.endServer = false;
                 Flags.clientNumber = 0;
+                /*
+                 * Opening a new TCPListner to listen for incoming connections
+                 */
                 TCPListener tcpListen = new TCPListener();
                 tcpListen.start();
                 log.info("Started server...");
             } else if (task.equals("stop")) {
+                /*
+                 * Server requested to be stopped
+                 */
                 if (Flags.endServer == true) {
                     System.out.println("Server already stopped!");
                     continue;
@@ -112,10 +124,19 @@ public class Server {
                 }
                 log.info("Server stopped... Total connections this session: " + Flags.totalConnections);
             } else if (task.contains("print")) {
+                /*
+                 * Dummy Function. Can be removed!
+                 */
                 System.out.println("clientNumber = " + Flags.clientNumber);
             } else if (!task.contains("quit")) {
+                /*
+                 * Invalid command
+                 */
                 System.out.println("Invalid command. Type help for list of commands");
             } else if (task.contains("quit")) {
+                /*
+                 * Server quitting fully
+                 */
                 if (Flags.endServer == false) {
                     System.out.println("You must first stop the server before quitting!");
                     task = "";

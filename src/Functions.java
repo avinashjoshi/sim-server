@@ -25,7 +25,8 @@ public class Functions {
 
     /**
      *
-     * Checks if a user exists in the HashMap
+     * Checks if a user exists in the HashMap (Passwd File)
+     * That is list of all users
      *
      * @param username user that has to be checked for existance
      * @return If a user is found in the HashMap, the value is returned Else, 0
@@ -61,7 +62,8 @@ public class Functions {
     }
 
     /**
-     *
+     * Get logged in users IP address
+     * 
      * @param user's ip address (String) is returned
      * @return users IPaddress is returned
      */
@@ -69,6 +71,13 @@ public class Functions {
         return Flags.ipUserSession.get(user).getInetAddress().getHostAddress();
     }
 
+    /**
+     * Gets list of all online users from loggedInUsers String array
+     * 
+     * @param username is the user who queries this function
+     * @return Returns the string containing all online users
+     * separated by ','
+     */
     public static String getOnlineUsers(String username) {
         String onlineUsers = "";
         int i = 0;

@@ -77,7 +77,7 @@ public class Packet implements Serializable {
      * Internally calls craftPacket (command, user, nonce, data);
      */
 
-    public void craftPacket(String command, String user, int nonce, String data, Packet packet) {
+    public void craftPacket(String command, int nonce, String data, Packet packet) {
         craftPacket(command, nonce, data);
         this.pkt = packet;
     }

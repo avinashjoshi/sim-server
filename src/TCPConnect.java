@@ -182,6 +182,9 @@ public class TCPConnect extends Thread {
                     log.info("User " + usernameReceived + " quitting...");
                     break;
                 } else if (Flags.loggedInCommands.contains(command)) {
+                    /*
+                     * Only user in session can access this area
+                     */
                     if (sessionUser == null || !Functions.isLoggedIn(sessionUser)) {
                         /*
                          * User not logged in to access this section
@@ -200,8 +203,17 @@ public class TCPConnect extends Thread {
                         Serial.writeObject(sock, sendPacket);
                     } else if (command.equals("talk")) {
                         /*
-                         * User wants to talk to a specific user
+                         * usernameReceived wanting to talk to another user
+                         * Sending a ticket happens here!
                          */
+                        
+                        /*
+                         * Basically, implement Otway-Rees algo!
+                         * If user is valid, send:
+                         * Key_1{userToTalk:IP:sessionKey}:Ticket
+                         * Ticket = Key_2{userReceived:sessionKey:Nonce}
+                         */
+                        
                     } else if (command.equals("logout")) {
                         // Removing username from the session
                         Flags.ipUserSession.remove(usernameReceived);
