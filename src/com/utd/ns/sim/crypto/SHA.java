@@ -28,6 +28,19 @@ public class SHA {
     public static String SHA256String(String msg) throws NoSuchAlgorithmException {
         return (Utils.toHex(SHA256(msg)));
     }
+    
+    public static byte[] SHA512(String msg) throws NoSuchAlgorithmException {
+        // TODO code application logic here
+        byte[] output;
+        java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-512");
+        md.update(msg.getBytes());
+        output = md.digest();
+        return (output);
+    }
+
+    public static String SHA512String(String msg) throws NoSuchAlgorithmException {
+        return (Utils.toHex(SHA256(msg)));
+    }
     private static final String SHA_HMAC_ALGORITHM = "HMACSHA256";
     private static byte[] abDigest = null;
     private static String szResult = null;

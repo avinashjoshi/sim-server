@@ -34,13 +34,14 @@ public class TCPConnect extends Thread {
     private String command;
     private String usernameReceived;
     private String password;
-    private int nonce;
+    private String nonce;
     private String data;
     private int i;
     private int clientNumber;
     private String[] dataSplit;
     private String sessionUser;
     private String userList;
+    private int integerNonce;
 
     public TCPConnect(Socket skt, int clientNumber) throws IOException {
         sock = skt;
@@ -71,12 +72,13 @@ public class TCPConnect extends Thread {
                 command = packet.getCommand();  // Get the command
                 nonce = packet.getNonce();      // Get the Nonce
                 data = packet.getData();        // Get the data
+                
                 i = 0;
 
                 //Check if the packet really has something or not!
                 if (command.equals("")
                         || data.equals("")
-                        || nonce == 0) {
+                        || nonce.equals("")) {
                     /*
                      * Warn the client that an invalid packet was sent!
                      */
@@ -92,15 +94,15 @@ public class TCPConnect extends Thread {
 
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
-                    password = SHA.SHA256String(dataSplit[1]);
-                    i = Functions.CheckUser(usernameReceived);
+                    password = SHA.SHA512String(dataSplit[1]);
+                    i = Functions.checkUser(usernameReceived);
 
                     if (i > -1) {
                         /*
                          * Yep, already in file
                          */
                         log.warn("Username " + usernameReceived + " already exists!");
-                        sendPacket.craftPacket("error.print", packet.getNonce(), "User " + usernameReceived + " already Exists!");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce) , "User " + usernameReceived + " already Exists!");
                         Serial.writeObject(sock, sendPacket);
                     } else {
                         /*
@@ -119,7 +121,7 @@ public class TCPConnect extends Thread {
                         obj.close();
                         fstream.close();
 
-                        sendPacket.craftPacket("success.print", packet.getNonce() + 1, "Registered user ");
+                        sendPacket.craftPacket("success.print", Functions.nonceFail(nonce), "Registered user ");
                         Serial.writeObject(sock, sendPacket);
                         log.info("Registering user " + usernameReceived);
                     }
@@ -131,15 +133,15 @@ public class TCPConnect extends Thread {
 
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
-                    password = SHA.SHA256String(dataSplit[1]);
-                    i = Functions.CheckUser(usernameReceived);
+                    password = SHA.SHA512String(dataSplit[1]);
+                    i = Functions.checkUser(usernameReceived);
 
                     if (i == -1) {
                         /*
                          * Oops, un-registered user trying to log-in
                          */
                         log.warn("Oops, un-registered user trying to log-in!");
-                        sendPacket.craftPacket("error.print", nonce, "Invalid username or password!");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "Invalid username or password!");
                         Serial.writeObject(sock, sendPacket);
                     } else {
                         /*
@@ -154,7 +156,7 @@ public class TCPConnect extends Thread {
                                 /*
                                  * User already has an existing session!
                                  */
-                                sendPacket.craftPacket("error.print", nonce, "You are already logged in from "
+                                sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "You are already logged in from "
                                         + Functions.getUserIPAddress(usernameReceived) + "!");
                                 log.info("User trying to log in again from different IP -"
                                         + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
@@ -167,7 +169,7 @@ public class TCPConnect extends Thread {
                                 Flags.ipUserSession.put(usernameReceived, sock);
                                 this.sessionUser = this.usernameReceived;
                                 Flags.loggedInUsers.add(usernameReceived);
-                                sendPacket.craftPacket("success.log", nonce, "Logged In!");
+                                sendPacket.craftPacket("success.log", Functions.nonceSuccess(nonce), "Logged In!");
                                 log.info("User logged in -" + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
                                 Serial.writeObject(sock, sendPacket);
                             }
@@ -176,7 +178,7 @@ public class TCPConnect extends Thread {
                              * Incorrect password
                              */
                             log.warn("Password incorrect for user " + usernameReceived + "!");
-                            sendPacket.craftPacket("error.print", nonce, "Invalid username or password!");
+                            sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "Invalid username or password!");
                             Serial.writeObject(sock, sendPacket);
                         }
                     }
@@ -197,7 +199,7 @@ public class TCPConnect extends Thread {
                          * User not logged in to access this section
                          */
                         log.info("User " + sessionUser + " unauthorized to access \"" + command + "\"");
-                        sendPacket.craftPacket("error.print", nonce, "You need to be logged in!");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "You need to be logged in!");
                         Serial.writeObject(sock, sendPacket);
                         continue;
                     } else if (command.equals("list")) {
@@ -206,7 +208,7 @@ public class TCPConnect extends Thread {
                          */
                         log.info("Request to list by " + usernameReceived);
                         userList = Functions.getOnlineUsers(usernameReceived);
-                        sendPacket.craftPacket("success.print", nonce, userList);
+                        sendPacket.craftPacket("success.print", Functions.nonceSuccess(nonce), userList);
                         Serial.writeObject(sock, sendPacket);
                     } else if (command.equals("talk")) {
                         /*
@@ -225,7 +227,7 @@ public class TCPConnect extends Thread {
                         // Removing username from the session
                         Flags.ipUserSession.remove(usernameReceived);
                         Flags.loggedInUsers.remove(usernameReceived);
-                        sendPacket.craftPacket("error.print", nonce, "Logged out!");
+                        sendPacket.craftPacket("error.print", Functions.nonceSuccess(nonce), "Logged out!");
                         Serial.writeObject(sock, sendPacket);
                     }
                 } else {
@@ -233,7 +235,7 @@ public class TCPConnect extends Thread {
                      * Error: command not one of the above "if" condition
                      */
                     log.info("Invalid packet - " + command + "|" + data);
-                    sendPacket.craftPacket("error.log", nonce, "Command " + command + ": not found!");
+                    sendPacket.craftPacket("error.log", Functions.nonceFail(nonce), "Command " + command + ": not found!");
                     Serial.writeObject(sock, sendPacket);
                 }
             }

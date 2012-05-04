@@ -13,6 +13,14 @@ import java.util.ArrayList;
  * @since April 23, 2012
  */
 public class Functions {
+    
+    public static String nonceFail (String nonce) {
+        return (Integer.toString( Integer.parseInt(nonce) - 1));
+    }
+    
+    public static String nonceSuccess (String nonce) {
+        return (Integer.toString(Integer.parseInt(nonce) + 1));
+    }
 
     public static ArrayList<String> LoadCommands(String cmdString, String sep) {
         ArrayList<String> commands = new ArrayList<String>();
@@ -34,7 +42,7 @@ public class Functions {
      * @return If a user is found in the HashMap, the value is returned Else, 0
      * is returned (user not found)
      */
-    public static int CheckUser(String username) {
+    public static int checkUser(String username) {
         int userValue = 0;
         int flag = -1;
         while (userValue < Flags.usersList.size()) {
