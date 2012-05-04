@@ -1,6 +1,5 @@
 package com.utd.ns.sim.server;
 
-
 import com.utd.ns.sim.crypto.SHA;
 import com.utd.ns.sim.packet.Packet;
 import com.utd.ns.sim.server.userstore.UserPass;
@@ -63,16 +62,15 @@ public class TCPConnect extends Thread {
             while (true) {
                 /*
                  * Read object from socket "sock" and de-serialize that in the
-                 * object packet of type Packet
-                 * If you do not receive packets => Packet structure in client
-                 * is different
+                 * object packet of type Packet If you do not receive packets =>
+                 * Packet structure in client is different
                  */
                 packet = (Packet) Serial.readObject(sock);
                 sendPacket = new Packet();  // Creating a new packet to send back
                 command = packet.getCommand();  // Get the command
                 nonce = packet.getNonce();      // Get the Nonce
                 data = packet.getData();        // Get the data
-                
+
                 i = 0;
 
                 //Check if the packet really has something or not!
@@ -95,6 +93,17 @@ public class TCPConnect extends Thread {
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
                     password = SHA.SHA512String(dataSplit[1]);
+
+                    /*
+                     * Check if username matches the criteria!
+                     */
+                    if (!Functions.validateUserName(usernameReceived)) {
+                        log.warn("Username " + usernameReceived + " does not meet requirements!");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "username can be characters, numbers or underscore between 3 and 10 characters!");
+                        Serial.writeObject(sock, sendPacket);
+                        continue;
+                    }
+
                     i = Functions.checkUser(usernameReceived);
 
                     if (i > -1) {
@@ -102,7 +111,7 @@ public class TCPConnect extends Thread {
                          * Yep, already in file
                          */
                         log.warn("Username " + usernameReceived + " already exists!");
-                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce) , "User " + usernameReceived + " already Exists!");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "User " + usernameReceived + " already Exists!");
                         Serial.writeObject(sock, sendPacket);
                     } else {
                         /*
@@ -121,7 +130,7 @@ public class TCPConnect extends Thread {
                         obj.close();
                         fstream.close();
 
-                        sendPacket.craftPacket("success.print", Functions.nonceFail(nonce), "Registered user ");
+                        sendPacket.craftPacket("success.print", Functions.nonceSuccess(nonce), "Registered user ");
                         Serial.writeObject(sock, sendPacket);
                         log.info("Registering user " + usernameReceived);
                     }
@@ -134,6 +143,16 @@ public class TCPConnect extends Thread {
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
                     password = SHA.SHA512String(dataSplit[1]);
+                    /*
+                     * Check if username matches the criteria!
+                     */
+                    if (!Functions.validateUserName(usernameReceived)) {
+                        log.warn("Username " + usernameReceived + " does not meet requirements!");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "username can be characters, numbers or underscore between 3 and 10 characters!");
+                        Serial.writeObject(sock, sendPacket);
+                        continue;
+                    }
+                    
                     i = Functions.checkUser(usernameReceived);
 
                     if (i == -1) {
@@ -215,14 +234,9 @@ public class TCPConnect extends Thread {
                          * usernameReceived wanting to talk to another user
                          * Sending a ticket happens here!
                          */
-                        
                         /*
-                         * Basically, implement Otway-Rees algo!
-                         * If user is valid, send:
-                         * Key_1{userToTalk:IP:sessionKey}:Ticket
-                         * Ticket = Key_2{userReceived:sessionKey:Nonce}
+                         * Implement basic Kerberos
                          */
-                        
                     } else if (command.equals("logout")) {
                         // Removing username from the session
                         Flags.ipUserSession.remove(usernameReceived);

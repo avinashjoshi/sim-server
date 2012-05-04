@@ -38,6 +38,7 @@ public class Flags {
     public static ArrayList<String> loggedInCommands;
     private final String loggedInCommandString;
     public static String rsaKey;
+    public static String USERNAME_PATTERN = "^[a-z0-9_]{3,15}$";
 
     public Flags() throws UnknownHostException {
         totalConnections = 0;

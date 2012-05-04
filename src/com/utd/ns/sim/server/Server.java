@@ -26,7 +26,7 @@ public class Server {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException, FileNotFoundException, ClassNotFoundException {
-        PropertyConfigurator.configure(ServerInit.confFolder + "log4j.properties");
+        PropertyConfigurator.configure("log4j.properties");
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         String task = "";
         int i, totalCon;
