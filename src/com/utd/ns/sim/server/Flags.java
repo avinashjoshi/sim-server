@@ -1,6 +1,10 @@
+package com.utd.ns.sim.server;
 
+import com.utd.ns.sim.server.userstore.UserPass;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.locks.Lock;
@@ -33,8 +37,9 @@ public class Flags {
     public static final Lock passwdWriteLock = readWriteLock.writeLock();
     public static ArrayList<String> loggedInCommands;
     private final String loggedInCommandString;
+    public static String rsaKey;
 
-    public Flags() {
+    public Flags() throws UnknownHostException {
         totalConnections = 0;
         tcpPort = ServerInit.TCPPort;
         endServer = true;
@@ -45,5 +50,7 @@ public class Flags {
         loggedInCommandString = "logout,list,talk";
         loggedInCommands = Functions.LoadCommands(loggedInCommandString, ",");
         loggedInUsers = new ArrayList<String>();
+        InetAddress addr = InetAddress.getLocalHost();
+        rsaKey = ServerInit.keysFolder.concat(addr.getHostName());
     }
 }

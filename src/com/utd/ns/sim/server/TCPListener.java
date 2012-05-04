@@ -1,4 +1,7 @@
+package com.utd.ns.sim.server;
 
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import org.apache.log4j.Logger;
@@ -30,6 +33,7 @@ public class TCPListener extends Thread {
              * can be closed from main()
              */
             Flags.serverSocket = new ServerSocket(TCPPort);
+            
             log.info("Connected to " + Flags.serverSocket.getInetAddress().getHostAddress() + ":" + Flags.serverSocket.getLocalPort());
             while (Flags.endServer == false) {
                 // Listening for incoming connections
@@ -42,7 +46,7 @@ public class TCPListener extends Thread {
                     Flags.allSocketList.put(Flags.clientNumber, listenSock);
                     Flags.clientNumber++;
                     Flags.totalConnections++;
-                    
+
                     //Starting a new thread for actual processing!
                     tcpConnection = new TCPConnect(listenSock, Flags.clientNumber);
                     tcpConnection.start();

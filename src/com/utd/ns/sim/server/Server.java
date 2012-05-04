@@ -1,19 +1,22 @@
+package com.utd.ns.sim.server;
+
 /*
- * Main Server class.
- * Server is a command-line program that Reads from the server-conf property
- * file, the port on which its supposed to run.
- * 
+ * Main Server class. Server is a command-line program that Reads from the
+ * server-conf property file, the port on which its supposed to run.
+ *
  * This program has different options start, stop, help and quit.
  */
-
 /**
  *
  * @author Avinash Joshi <avinash.joshi@utdallas.edu>
  * @since April 19, 2012
  */
+import com.utd.ns.sim.crypto.RSA;
+import com.utd.ns.sim.server.userstore.UserPass;
 import java.io.*;
 import java.util.ArrayList;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 public class Server {
 
@@ -23,6 +26,7 @@ public class Server {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException, FileNotFoundException, ClassNotFoundException {
+        PropertyConfigurator.configure(ServerInit.confFolder + "log4j.properties");
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         String task = "";
         int i, totalCon;
@@ -41,7 +45,7 @@ public class Server {
                 /*
                  * Print out help command
                  */
-                System.out.println("Possible commands: help, start, stop, quit");
+                System.out.println("Possible commands: help, start, genrsa, stop, quit");
             } else if (task.equals("start")) {
                 /*
                  * Server requested to be started
@@ -52,9 +56,9 @@ public class Server {
                 }
                 System.out.println("Starting server...");
 
-                File file = new File(ServerInit.passwdFile);
+                File passwdFile = new File(ServerInit.passwdFile);
                 //If the file exists, read password object from the file
-                if (file.exists()) {
+                if (passwdFile.exists()) {
                     //Check if password file is use by other 
                     Flags.passwdReadLock.lock();
                     try {
@@ -69,12 +73,26 @@ public class Server {
                             System.out.println(Flags.usersList.get(i).getUserName() + ":" + Flags.usersList.get(i).getPassed());
                             i++;
                         }
+                    } catch (ClassNotFoundException ex) {
+                        System.out.println("Probably you will have to delete password file!");
+                        throw ex;
                     } finally {
                         Flags.passwdReadLock.unlock();
                     }
                 } else {
                     log.info("Password file does not exist. Will create new one when necessary");
                 }
+                /*
+                 * Checking if RSA public and private keys exist
+                 */
+                
+                File thePubKey = new File(Flags.rsaKey + ".pub");
+                File thePrivKey = new File(Flags.rsaKey + ".priv");
+                if (!thePubKey.exists() || !thePrivKey.exists()) {
+                    RSA.generatePubPrivPair(1024, Flags.rsaKey);
+                    log.info("Created new pair of RSA keys");
+                }
+
                 Flags.endServer = false;
                 Flags.clientNumber = 0;
                 /*
@@ -123,11 +141,20 @@ public class Server {
                     Flags.passwdWriteLock.unlock();
                 }
                 log.info("Server stopped... Total connections this session: " + Flags.totalConnections);
+            } else if (task.contains("genrsa")) {
+                /*
+                 * Generating new RSA public and private key
+                 */
+                
+                RSA.generatePubPrivPair(1024, Flags.rsaKey);
+                log.info("Created new pair of RSA keys - on request");
+
             } else if (task.contains("print")) {
                 /*
                  * Dummy Function. Can be removed!
                  */
                 System.out.println("clientNumber = " + Flags.clientNumber);
+                System.out.println("Logged in users = " + Flags.loggedInUsers.size());
             } else if (!task.contains("quit")) {
                 /*
                  * Invalid command

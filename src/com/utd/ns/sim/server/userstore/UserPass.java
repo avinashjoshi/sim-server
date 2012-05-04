@@ -1,3 +1,5 @@
+package com.utd.ns.sim.server.userstore;
+
 
 import java.io.Serializable;
 

@@ -1,4 +1,9 @@
+package com.utd.ns.sim.server;
 
+
+import com.utd.ns.sim.crypto.SHA;
+import com.utd.ns.sim.packet.Packet;
+import com.utd.ns.sim.server.userstore.UserPass;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -58,6 +63,8 @@ public class TCPConnect extends Thread {
                 /*
                  * Read object from socket "sock" and de-serialize that in the
                  * object packet of type Packet
+                 * If you do not receive packets => Packet structure in client
+                 * is different
                  */
                 packet = (Packet) Serial.readObject(sock);
                 sendPacket = new Packet();  // Creating a new packet to send back
@@ -85,14 +92,14 @@ public class TCPConnect extends Thread {
 
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
-                    password = Crypto.sha1(dataSplit[1]);
+                    password = SHA.SHA256String(dataSplit[1]);
                     i = Functions.CheckUser(usernameReceived);
 
                     if (i > -1) {
                         /*
                          * Yep, already in file
                          */
-                        log.warn("Username already exists!");
+                        log.warn("Username " + usernameReceived + " already exists!");
                         sendPacket.craftPacket("error.print", packet.getNonce(), "User " + usernameReceived + " already Exists!");
                         Serial.writeObject(sock, sendPacket);
                     } else {
@@ -124,7 +131,7 @@ public class TCPConnect extends Thread {
 
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
-                    password = Crypto.sha1(dataSplit[1]);
+                    password = SHA.SHA256String(dataSplit[1]);
                     i = Functions.CheckUser(usernameReceived);
 
                     if (i == -1) {
