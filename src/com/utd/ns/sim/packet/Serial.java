@@ -1,4 +1,4 @@
-package com.utd.ns.sim.server;
+package com.utd.ns.sim.packet;
 
 
 import java.io.IOException;

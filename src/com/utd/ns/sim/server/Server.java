@@ -125,6 +125,7 @@ public class Server {
                 }
                 Flags.ipUserSession.clear();
                 Flags.endServer = true;
+                Flags.userListenPorts.clear();
                 if (Flags.serverSocket != null) {
                     Flags.serverSocket.close();
                 }
@@ -141,6 +142,7 @@ public class Server {
                     Flags.passwdWriteLock.unlock();
                 }
                 log.info("Server stopped... Total connections this session: " + Flags.totalConnections);
+                Flags.totalConnections = 0;
             } else if (task.contains("genrsa")) {
                 /*
                  * Generating new RSA public and private key

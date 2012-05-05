@@ -2,6 +2,7 @@ package com.utd.ns.sim.server;
 
 import com.utd.ns.sim.crypto.SHA;
 import com.utd.ns.sim.packet.Packet;
+import com.utd.ns.sim.packet.Serial;
 import com.utd.ns.sim.server.userstore.UserPass;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -40,7 +41,6 @@ public class TCPConnect extends Thread {
     private String[] dataSplit;
     private String sessionUser;
     private String userList;
-    private int integerNonce;
 
     public TCPConnect(Socket skt, int clientNumber) throws IOException {
         sock = skt;
@@ -152,7 +152,7 @@ public class TCPConnect extends Thread {
                         Serial.writeObject(sock, sendPacket);
                         continue;
                     }
-                    
+
                     i = Functions.checkUser(usernameReceived);
 
                     if (i == -1) {
@@ -191,6 +191,17 @@ public class TCPConnect extends Thread {
                                 sendPacket.craftPacket("success.log", Functions.nonceSuccess(nonce), "Logged In!");
                                 log.info("User logged in -" + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
                                 Serial.writeObject(sock, sendPacket);
+                                
+                                packet = (Packet) Serial.readObject(sock);
+                                log.info("Received Data " + packet.data);
+                                if (Functions.checkNonce(packet.nonce, Long.parseLong(Functions.nonceSuccess(nonce)) + 10)) {
+                                    String[] split = packet.data.split(":");
+                                    if (split[0].equals(this.sessionUser)) {
+                                        log.info("Added " + split[0] + ":" + split[1] + " (listener port)");
+                                        Flags.userListenPorts.put(split[0], split[1]);
+                                    }
+                                }
+                                
                             }
                         } else {
                             /*
@@ -234,13 +245,41 @@ public class TCPConnect extends Thread {
                          * usernameReceived wanting to talk to another user
                          * Sending a ticket happens here!
                          */
-                        /*
-                         * Implement basic Kerberos
-                         */
+
+                        //Get Contents base on user's shared key
+                        // data = receiveduser:totalkuser = a:b
+                        
+                        String[] users = data.split(":");
+                        if (!users[0].equals(this.sessionUser)) {
+                            sendPacket.craftPacket(data, Functions.nonceFail(nonce), "Invalid user1:user2 pair");
+                        } else {
+                            if (Functions.isLoggedIn(users[1])) {
+                                //check if totalkuser is really logged in
+                                /*
+                                 * Send: K_a{a:b}, K_a{nonce+1}, K_a{b:K_ab:IP},
+                                 * pkt pkt = K_b{"talkreq"}, K_b{timestamp},
+                                 * K_b{K_ab:a}
+                                 */
+                                log.info("Constructing packet inside packet");
+                                sendPacket.craftPacket(data, Functions.nonceSuccess(nonce), users[1] 
+                                        + ":key:"
+                                        + Functions.getUserIPAddress(users[1]) + ":"
+                                        + Flags.userListenPorts.get(users[1]));
+                                sendPacket.pkt = new Packet();
+                                sendPacket.pkt.craftPacket("talkrequest", Long.toString(System.currentTimeMillis()), "key:" + users[0]);
+                            } else {
+                                sendPacket.craftPacket(data, Functions.nonceFail(nonce), "User " + users[1] + " logged out!");
+                            }
+                        }
+
+                        log.info("Sent packet");
+                        Serial.writeObject(sock, sendPacket);
+
                     } else if (command.equals("logout")) {
                         // Removing username from the session
                         Flags.ipUserSession.remove(usernameReceived);
                         Flags.loggedInUsers.remove(usernameReceived);
+                        Flags.userListenPorts.remove(usernameReceived);
                         sendPacket.craftPacket("error.print", Functions.nonceSuccess(nonce), "Logged out!");
                         Serial.writeObject(sock, sendPacket);
                     }

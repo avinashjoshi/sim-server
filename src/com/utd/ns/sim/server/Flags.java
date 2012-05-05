@@ -36,6 +36,7 @@ public class Flags {
     public static final Lock passwdReadLock = readWriteLock.readLock();
     public static final Lock passwdWriteLock = readWriteLock.writeLock();
     public static ArrayList<String> loggedInCommands;
+    public static HashMap<String, String> userListenPorts;
     private final String loggedInCommandString;
     public static String rsaKey;
     public static String USERNAME_PATTERN = "^[a-z0-9_]{3,15}$";
@@ -48,6 +49,7 @@ public class Flags {
         clientNumber = 0;
         usersList = new ArrayList<UserPass>();
         ipUserSession = new HashMap<String, Socket>();
+        userListenPorts = new HashMap<String, String>();
         loggedInCommandString = "logout,list,talk";
         loggedInCommands = Functions.LoadCommands(loggedInCommandString, ",");
         loggedInUsers = new ArrayList<String>();
