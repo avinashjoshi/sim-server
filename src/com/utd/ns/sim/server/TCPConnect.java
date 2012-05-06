@@ -260,13 +260,15 @@ public class TCPConnect extends Thread {
                                  * pkt pkt = K_b{"talkreq"}, K_b{timestamp},
                                  * K_b{K_ab:a}
                                  */
-                                log.info("Constructing packet inside packet");
                                 sendPacket.craftPacket(data, Functions.nonceSuccess(nonce), users[1] 
                                         + ":key:"
                                         + Functions.getUserIPAddress(users[1]) + ":"
                                         + Flags.userListenPorts.get(users[1]));
                                 sendPacket.pkt = new Packet();
-                                sendPacket.pkt.craftPacket("talkrequest", Long.toString(System.currentTimeMillis()), "key:" + users[0]);
+                                /*
+                                 * Generating packet inside packet (Ticket)
+                                 */
+                                sendPacket.pkt.craftPacket("talkrequest", Long.toString(System.currentTimeMillis()),  users[0] + ":key");
                             } else {
                                 sendPacket.craftPacket(data, Functions.nonceFail(nonce), "User " + users[1] + " logged out!");
                             }
