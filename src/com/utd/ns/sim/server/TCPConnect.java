@@ -154,6 +154,16 @@ public class TCPConnect extends Thread {
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
                     password = SHA.SHA512String(dataSplit[1]);
+                    String timestamp  = dataSplit[2];
+                    if ((System.currentTimeMillis() - Long.parseLong(timestamp)) > 5000) {
+                        //Error, invalid packet
+                        nonce = Long.toString(0);
+                        log.warn("Invalid login packet received");
+                        sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "Packet expired");
+                        Serial.writeObject(sock, sendPacket);
+                        continue;
+                    }
+                    
                     /*
                      * Check if username matches the criteria!
                      */
@@ -261,11 +271,11 @@ public class TCPConnect extends Thread {
                         log.info("Request to list by " + usernameReceived);
                         userList = Functions.getOnlineUsers(usernameReceived);
                         userList = AES.doEncryptDecryptHMACToString(userList, userAESKey, 'E');
-                        System.out.println("UserList: " + userList);
                         /*
                          * Check if the received nonce is current time
                          */
-                        sendPacket.craftPacket("success.print", Functions.nonceSuccess(nonce), userList);
+                        nonce = AES.doEncryptDecryptHMACToString(Functions.nonceSuccess(nonce), userAESKey, 'E');
+                        sendPacket.craftPacket("success.print", nonce, userList);
                         Serial.writeObject(sock, sendPacket);
                     } else if (command.equals("talk")) {
                         /*
