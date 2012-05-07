@@ -1,5 +1,6 @@
 package com.utd.ns.sim.server;
 
+import com.utd.ns.sim.crypto.RSA;
 import com.utd.ns.sim.crypto.SHA;
 import com.utd.ns.sim.packet.Packet;
 import com.utd.ns.sim.packet.Serial;
@@ -89,7 +90,10 @@ public class TCPConnect extends Thread {
                      * User trying to register from a client the data will be
                      * username:password
                      */
-
+                    
+                    data = RSA.decrypt(data, Flags.rsaKey);
+                    nonce = RSA.decrypt(nonce, Flags.rsaKey);
+                    
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
                     password = SHA.SHA512String(dataSplit[1]);
