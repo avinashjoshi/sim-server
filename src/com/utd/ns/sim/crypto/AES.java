@@ -14,6 +14,10 @@ import javax.crypto.spec.SecretKeySpec;
  */
 public class AES {
 
+    public static String doEncryptDecryptHMACToString(String receivedText, String key, char mode) {
+        return doEncryptDecryptHMAC(receivedText, key, mode).get(1);
+    }
+    
     /**
      * This is the main function being called
      *

@@ -40,6 +40,7 @@ public class Flags {
     private final String loggedInCommandString;
     public static String rsaKey;
     public static String USERNAME_PATTERN = "^[a-z0-9_]{3,15}$";
+    public static HashMap<String, String> userAESKeys;
 
     public Flags() throws UnknownHostException {
         totalConnections = 0;
@@ -55,5 +56,6 @@ public class Flags {
         loggedInUsers = new ArrayList<String>();
         InetAddress addr = InetAddress.getLocalHost();
         rsaKey = ServerInit.keysFolder.concat(addr.getHostName());
+        userAESKeys = new HashMap<String, String>();
     }
 }

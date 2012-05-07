@@ -1,5 +1,6 @@
 package com.utd.ns.sim.server;
 
+import com.utd.ns.sim.crypto.AES;
 import com.utd.ns.sim.crypto.RSA;
 import com.utd.ns.sim.crypto.SHA;
 import com.utd.ns.sim.packet.Packet;
@@ -9,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import org.apache.log4j.Logger;
 
 /*
@@ -42,6 +44,9 @@ public class TCPConnect extends Thread {
     private String[] dataSplit;
     private String sessionUser;
     private String userList;
+    private String userAESKey;
+    private String dataToSend;
+    private String sessionKey;
 
     public TCPConnect(Socket skt, int clientNumber) throws IOException {
         sock = skt;
@@ -90,10 +95,10 @@ public class TCPConnect extends Thread {
                      * User trying to register from a client the data will be
                      * username:password
                      */
-                    
+
                     data = RSA.decrypt(data, Flags.rsaKey);
                     nonce = RSA.decrypt(nonce, Flags.rsaKey);
-                    
+
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
                     password = SHA.SHA512String(dataSplit[1]);
@@ -144,6 +149,8 @@ public class TCPConnect extends Thread {
                      * username:password
                      */
 
+                    data = RSA.decrypt(data, Flags.rsaKey);
+
                     dataSplit = data.split(":");
                     usernameReceived = dataSplit[0];
                     password = SHA.SHA512String(dataSplit[1]);
@@ -151,6 +158,7 @@ public class TCPConnect extends Thread {
                      * Check if username matches the criteria!
                      */
                     if (!Functions.validateUserName(usernameReceived)) {
+                        nonce = Long.toString(0);
                         log.warn("Username " + usernameReceived + " does not meet requirements!");
                         sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "username can be characters, numbers or underscore between 3 and 10 characters!");
                         Serial.writeObject(sock, sendPacket);
@@ -163,6 +171,7 @@ public class TCPConnect extends Thread {
                         /*
                          * Oops, un-registered user trying to log-in
                          */
+                        nonce = Long.toString(0);
                         log.warn("Oops, un-registered user trying to log-in!");
                         sendPacket.craftPacket("error.print", Functions.nonceFail(nonce), "Invalid username or password!");
                         Serial.writeObject(sock, sendPacket);
@@ -175,6 +184,11 @@ public class TCPConnect extends Thread {
                              * User authenticated. Check if user already in
                              * session (ipUserSession)
                              */
+                            Flags.userAESKeys.put(usernameReceived, SHA.SHA256String(usernameReceived + password));
+                            userAESKey = SHA.SHA256String(usernameReceived + password);
+                            ArrayList<String> decryptedNonce = AES.doEncryptDecryptHMAC(nonce, userAESKey, 'D');
+                            nonce = decryptedNonce.get(1);
+
                             if (Functions.isLoggedIn(usernameReceived)) {
                                 /*
                                  * User already has an existing session!
@@ -195,7 +209,7 @@ public class TCPConnect extends Thread {
                                 sendPacket.craftPacket("success.log", Functions.nonceSuccess(nonce), "Logged In!");
                                 log.info("User logged in -" + usernameReceived + ":" + sock.getInetAddress().getHostAddress());
                                 Serial.writeObject(sock, sendPacket);
-                                
+
                                 packet = (Packet) Serial.readObject(sock);
                                 log.info("Received Data " + packet.data);
                                 if (Functions.checkNonce(packet.nonce, Long.parseLong(Functions.nonceSuccess(nonce)) + 10)) {
@@ -205,7 +219,7 @@ public class TCPConnect extends Thread {
                                         Flags.userListenPorts.put(split[0], split[1]);
                                     }
                                 }
-                                
+
                             }
                         } else {
                             /*
@@ -240,8 +254,17 @@ public class TCPConnect extends Thread {
                         /*
                          * User is querying to list all logged in users
                          */
+                        userAESKey = SHA.SHA256String(usernameReceived + password);
+                        usernameReceived = AES.doEncryptDecryptHMACToString(data, userAESKey, 'D');
+                        nonce = AES.doEncryptDecryptHMACToString(nonce, userAESKey, 'D');
+                        
                         log.info("Request to list by " + usernameReceived);
                         userList = Functions.getOnlineUsers(usernameReceived);
+                        userList = AES.doEncryptDecryptHMACToString(userList, userAESKey, 'E');
+                        System.out.println("UserList: " + userList);
+                        /*
+                         * Check if the received nonce is current time
+                         */
                         sendPacket.craftPacket("success.print", Functions.nonceSuccess(nonce), userList);
                         Serial.writeObject(sock, sendPacket);
                     } else if (command.equals("talk")) {
@@ -252,10 +275,14 @@ public class TCPConnect extends Thread {
 
                         //Get Contents base on user's shared key
                         // data = receiveduser:totalkuser = a:b
+
+                        data = AES.doEncryptDecryptHMACToString(data, userAESKey, 'D');
+                        nonce = AES.doEncryptDecryptHMACToString(nonce, userAESKey, 'D');
                         
                         String[] users = data.split(":");
                         if (!users[0].equals(this.sessionUser)) {
-                            sendPacket.craftPacket(data, Functions.nonceFail(nonce), "Invalid user1:user2 pair");
+                            dataToSend = AES.doEncryptDecryptHMACToString("Invalid user1:user2 pair", userAESKey, 'E');
+                            sendPacket.craftPacket("", Functions.nonceFail(nonce), dataToSend);
                         } else {
                             if (Functions.isLoggedIn(users[1])) {
                                 //check if totalkuser is really logged in
@@ -264,17 +291,26 @@ public class TCPConnect extends Thread {
                                  * pkt pkt = K_b{"talkreq"}, K_b{timestamp},
                                  * K_b{K_ab:a}
                                  */
-                                sendPacket.craftPacket(data, Functions.nonceSuccess(nonce), users[1] 
-                                        + ":key:"
-                                        + Functions.getUserIPAddress(users[1]) + ":"
-                                        + Flags.userListenPorts.get(users[1]));
+                                sessionKey = SHA.SHA512String(userAESKey + Flags.userAESKeys.get(users[1]));
+                                dataToSend = users[1]
+                                        + ":" + sessionKey
+                                        + ":" + Functions.getUserIPAddress(users[1])
+                                        + ":" +  Flags.userListenPorts.get(users[1]);
+                                
+                                dataToSend = AES.doEncryptDecryptHMACToString(dataToSend, userAESKey, 'E');
+                                sendPacket.craftPacket("", Functions.nonceSuccess(nonce), dataToSend);
                                 sendPacket.pkt = new Packet();
                                 /*
                                  * Generating packet inside packet (Ticket)
                                  */
-                                sendPacket.pkt.craftPacket("talkrequest", Long.toString(System.currentTimeMillis()),  users[0] + ":key");
+                                dataToSend = AES.doEncryptDecryptHMACToString(users[0] + ":" + sessionKey, Flags.userAESKeys.get(users[1]), 'E');
+                                command = AES.doEncryptDecryptHMACToString("talkrequest", Flags.userAESKeys.get(users[1]), 'E');
+                                nonce = AES.doEncryptDecryptHMACToString(Long.toString(System.currentTimeMillis()), Flags.userAESKeys.get(users[1]), 'E');
+                                sendPacket.pkt.craftPacket(command, nonce, dataToSend);
+                                sessionKey = null;
                             } else {
-                                sendPacket.craftPacket(data, Functions.nonceFail(nonce), "User " + users[1] + " logged out!");
+                                dataToSend = AES.doEncryptDecryptHMACToString("User " + users[1] + " logged out!", userAESKey, 'E');
+                                sendPacket.craftPacket("", Functions.nonceFail(nonce), dataToSend);
                             }
                         }
 
