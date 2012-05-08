@@ -196,8 +196,8 @@ public class TCPConnect extends Thread {
                              */
                             Flags.userAESKeys.put(usernameReceived, SHA.SHA256String(usernameReceived + password));
                             userAESKey = SHA.SHA256String(usernameReceived + password);
-                            ArrayList<String> decryptedNonce = AES.doEncryptDecryptHMAC(nonce, userAESKey, 'D');
-                            nonce = decryptedNonce.get(1);
+                            //ArrayList<String> decryptedNonce = AES.doEncryptDecryptHMAC(nonce, userAESKey, 'D');
+                            nonce = AES.doEncryptDecryptHMACToString(nonce, userAESKey, 'D');
 
                             if (Functions.isLoggedIn(usernameReceived)) {
                                 /*
